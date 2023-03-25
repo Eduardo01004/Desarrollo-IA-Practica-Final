@@ -1,2 +1,1 @@
-# Desarrollo-IA-Practica-Final
-Aplicacion de deteccion de Rostros
+# Practica_Final_DesarrolloIA
