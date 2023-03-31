@@ -1,4 +1,4 @@
-import { useState,useRef } from 'react'
+import { useState,useRef,useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -8,10 +8,22 @@ import {  Modal } from "antd";
 import Webcam from 'react-webcam';
 
 function App() {
-  const webcamRef = useRef(null);
+  const videoRef = useRef(null);
 
   const [isCameraVisible, setIsCameraVisible] = useState(false);
+  const [imageSrc, setImageSrc] = useState(null);
+  const [videoStream, setVideoStream] = useState(null);
+  const [imageData, setImageData] = useState(null);
 
+
+  const takeSnapshot = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext('2d').drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/png');
+    setImageData(dataUrl);
+  };
   const handleCameraClick = () => {
     setIsCameraVisible(true);
   };
@@ -26,14 +38,45 @@ function App() {
 
   const capture = () => {
     const imageSrc = webcamRef.current.getScreenshot();
-    onCapture(imageSrc);
+    setImageSrc(imageSrc);
+    console.log(imageSrc)
   };
+
+  const openCamera = () => {
+    setIsCameraVisible(true);
+     navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        //console.log(stream)
+        setVideoStream(stream);
+      })
+      .catch((error) => {
+        console.log("Unable to access camera:", error);
+      });
+  };
+
+  const closeCamera = () => {
+    if (videoStream) {
+      videoStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+      setVideoStream(null);
+    }
+  };
+
  
 
 
   const onFinish = (values) => {
     console.log('Received values of form: ', values);
   };
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
+
 
 
   return (
@@ -64,23 +107,38 @@ function App() {
     </Form.Item>
 
     <Form.Item>
-      <Button type="primary" onClick={handleCameraClick}>
+      <Button type="primary" onClick={openCamera}>
         Activate camera
       </Button>
-      <Modal open={isCameraVisible} onCancel={handleCancel} footer={null}>
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <Webcam
-          audio={false}
-          ref={webcamRef}
-          screenshotFormat="image/jpeg"
-          style={{ width: '100%', maxWidth: '500px' }}
+
+
+      <Modal
+      title="Camera Modal"
+      open={isCameraVisible}
+      onCancel={handleCancel}
+      afterClose={closeCamera}
+      footer={[
+        <Button key="back" onClick={handleCancel}>
+          Cancel
+        </Button>,
+      ]}
+    >
+      <div>
+        {videoStream && (
+          <video
+          ref={videoRef}
+          autoPlay
+          style={{ width: '480px', height: '480px' }}
+          
         />
+        )  } 
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-        <Button onClick={capture}>Capture</Button>
-      </div>
+      <Button onClick={takeSnapshot}>Take Snapshot</Button>
+      {imageData && (
+        <img src={imageData} alt="Snapshot" />
+      )}
     </Modal>
-     
+   
     </Form.Item>
   </Form>
   )
