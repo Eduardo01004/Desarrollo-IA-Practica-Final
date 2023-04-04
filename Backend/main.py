@@ -2,83 +2,55 @@ import face_recognition
 import cv2
 import numpy as np
 import hashlib
-import time
-
-video_capture = cv2.VideoCapture(0) ##inicia la camara de video 
-
-eduardo_image = face_recognition.load_image_file("yo.jpg") ## imagen de origen
-eduardo_face_encoding = face_recognition.face_encodings(eduardo_image)[0]
-
-
-
+from flask import Flask, jsonify, request
+from io import BytesIO
+import base64
+from PIL import Image
+import os
+from src.models.api_error import ApiError
+app = Flask(__name__)
 
 
-known_face_encodings = [
-    eduardo_face_encoding,
-]
-known_face_names = [
-    "Eduardo Tun",
-
-]
-
-face_locations = []
-face_encodings = []
-face_names = []
-process_this_frame = True
-
-while True:
-    ret, frame = video_capture.read() # Captura un fotograma de la cámara
-
-    if process_this_frame:
-        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-
-        rgb_small_frame = small_frame[:, :, ::-1]
-
-        # Detecta las caras en el fotograma
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-        face_names = []
-        for face_encoding in face_encodings:
-            # Compara las codificaciones de las caras detectadas con la imagen de referencia
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-            name = "Desconocido"
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(face_distances)
-            #verifica si es el mismo rostro o no
-            if matches[best_match_index]:
-                name = known_face_names[best_match_index]
-                face_hash = hashlib.sha256(str(face_encoding).encode('utf-8')).hexdigest()
-                print("Hash generado y agregado a la blockchain correctamente.")
-                #time.sleep(5)  # Espera 5 segundos antes de salir del programa
-                ##exit()
-
-            face_names.append(name)
-
-    process_this_frame = not process_this_frame
 
 
-    for (top, right, bottom, left), name in zip(face_locations, face_names):
-        top *= 4
-        right *= 4
-        bottom *= 4
-        left *= 4
 
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+@app.route('/compare', methods=['POST'])
+def compare():
+    # Obtener las imágenes en base64 desde el frontend
+    image1_base64 = request.json['image']
+    image1_data = base64.b64decode(image1_base64)
+    with open('temp_img.jpg', 'wb') as f:
+        f.write(image1_data)
+    #imagen_pil = Image.open(BytesIO(image1_data))
+    #imagen_pil = imagen_pil.convert("L")
+    #imagen_np = np.array(imagen_pil)
+    # imagen de la base de datos
+    eduardo_image = face_recognition.load_image_file("./images/yo.jpg") ## imagen de origen
+    image1 = face_recognition.load_image_file('temp_img.jpg')
 
-        cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-        font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-        cv2.putText(frame, "Usuario verificado", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    face_encodings1 = face_recognition.face_encodings(image1)
+
+    #eduardo_face_encoding = face_recognition.face_encodings(eduardo_image)[0]
+    face_encodings2 = face_recognition.face_encodings(eduardo_image)
+
+    # Comparar las codificaciones de los rostros
+    if len(face_encodings1) > 0 and len(face_encodings2) > 0:
+        match_results = face_recognition.compare_faces([face_encodings1[0]], face_encodings2[0])
+        is_match = match_results[0]
+        print(is_match)
+        # Eliminar el archivo temporal
+        os.remove('temp_img.jpg')
+        api_error = ApiError(200, 'Comparacion de Rostro Exitosa')
+        return jsonify(api_error.to_json()), api_error.status_code
+    else:
+        is_match = False
+        print(is_match)
+        # Eliminar el archivo temporal
+        os.remove('temp_img.jpg')
+        api_error = ApiError(400, 'No se pudo Verificar la identidad')
+        return jsonify(api_error.to_json()), api_error.status_code
 
 
-      # Muestra el fotograma actual en una ventana de OpenCV
-    cv2.imshow('Video', frame)
 
-    # Espera a que se presione la tecla 'q' para salir del bucle while
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Libera la cámara y cierra la ventana de OpenCV
-video_capture.release()
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    app.run(debug=True)

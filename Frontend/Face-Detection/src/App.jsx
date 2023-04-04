@@ -5,7 +5,6 @@ import './App.css'
 import React from 'react';
 import { Form, Input, Button } from 'antd';
 import {  Modal } from "antd";
-import Webcam from 'react-webcam';
 
 function App() {
   const videoRef = useRef(null);
@@ -23,6 +22,7 @@ function App() {
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/png');
     setImageData(dataUrl);
+    //console.log(imageData)
   };
   const handleCameraClick = () => {
     setIsCameraVisible(true);
@@ -36,18 +36,12 @@ function App() {
     setIsCameraVisible(false);
   };
 
-  const capture = () => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    setImageSrc(imageSrc);
-    console.log(imageSrc)
-  };
 
   const openCamera = () => {
     setIsCameraVisible(true);
      navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
-        //console.log(stream)
         setVideoStream(stream);
       })
       .catch((error) => {
@@ -63,9 +57,6 @@ function App() {
       setVideoStream(null);
     }
   };
-
- 
-
 
   const onFinish = (values) => {
     console.log('Received values of form: ', values);
@@ -135,7 +126,7 @@ function App() {
       </div>
       <Button onClick={takeSnapshot}>Take Snapshot</Button>
       {imageData && (
-        <img src={imageData} alt="Snapshot" />
+        console.log(imageData)
       )}
     </Modal>
    
