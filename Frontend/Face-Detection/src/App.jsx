@@ -1,18 +1,35 @@
 import { useState,useRef,useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import React from 'react';
 import { Form, Input, Button } from 'antd';
 import {  Modal } from "antd";
+import Swal from 'sweetalert';
+import axios from 'axios';
+
+
 
 function App() {
+
+  const instance = axios.create({
+    baseURL: 'http://127.0.0.1:5000',
+    withCredentials: true, // habilita CORS
+  });
+  
   const videoRef = useRef(null);
 
   const [isCameraVisible, setIsCameraVisible] = useState(false);
-  const [imageSrc, setImageSrc] = useState(null);
   const [videoStream, setVideoStream] = useState(null);
   const [imageData, setImageData] = useState(null);
+
+  const headers = {
+    'Content-Type': 'application/json',
+    withCredentials: true,
+  };
+
+  const data = {
+    image:imageData
+    };
+
 
 
   const takeSnapshot = () => {
@@ -23,7 +40,52 @@ function App() {
     const dataUrl = canvas.toDataURL('image/png');
     setImageData(dataUrl);
     //console.log(imageData)
+    axios.post('http://127.0.0.1:5000/compare', data, { withCredentials: true })
+    .then(response => {
+        // código para manejar la respuesta exitosa
+        console.log(response)
+        Swal.fire({
+          title: 'Alerta',
+          text: 'Usuario Verificado',
+          timer: 2000,
+          timerProgressBar: true,
+          icon: 'success',
+        }).then(() => {
+          window.location.reload();
+        });
+    })
+    .catch(error => {
+        // código para manejar el error
+        console.log(error)
+    });
   };
+
+
+  const enviarDatos  = async () =>{
+
+    console.log(imageData)
+    axios.post('http://127.0.0.1:5000/compare', data, { headers })
+    .then(response => {
+        // código para manejar la respuesta exitosa
+        console.log(response)
+        Swal.fire({
+          title: 'Alerta',
+          text: 'Usuario Verificado',
+          timer: 2000,
+          timerProgressBar: true,
+          icon: 'success',
+        }).then(() => {
+          window.location.reload();
+        });
+    })
+    .catch(error => {
+        // código para manejar el error
+        console.log(error)
+    });
+
+  }
+
+
   const handleCameraClick = () => {
     setIsCameraVisible(true);
   };
