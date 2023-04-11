@@ -3,17 +3,14 @@ import './App.css'
 import React from 'react';
 import { Form, Input, Button } from 'antd';
 import {  Modal } from "antd";
-import Swal from 'sweetalert';
+import Swal from 'sweetalert2'; // Importa SweetAlert
 import axios from 'axios';
 
 
 
 function App() {
 
-  const instance = axios.create({
-    baseURL: 'http://127.0.0.1:5000',
-    withCredentials: true, // habilita CORS
-  });
+
   
   const videoRef = useRef(null);
 
@@ -23,8 +20,10 @@ function App() {
 
   const headers = {
     'Content-Type': 'application/json',
-    withCredentials: true,
+    'Origin': 'http://localhost:5173' // Reemplaza con la URL de tu aplicación React Vite
+
   };
+
 
   const data = {
     image:imageData
@@ -32,39 +31,29 @@ function App() {
 
 
 
-  const takeSnapshot = () => {
+  const takeSnapshot =  () => {
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext('2d').drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/png');
-    setImageData(dataUrl);
+    const splitArray = dataUrl.split(',');
+    setImageData(splitArray[1]);
     //console.log(imageData)
-    axios.post('http://127.0.0.1:5000/compare', data, { withCredentials: true })
-    .then(response => {
-        // código para manejar la respuesta exitosa
-        console.log(response)
-        Swal.fire({
-          title: 'Alerta',
-          text: 'Usuario Verificado',
-          timer: 2000,
-          timerProgressBar: true,
-          icon: 'success',
-        }).then(() => {
-          window.location.reload();
-        });
-    })
-    .catch(error => {
-        // código para manejar el error
-        console.log(error)
-    });
+
+   
   };
 
+  const enviarData = () =>{
+    //console.log(imageData)
 
-  const enviarDatos  = async () =>{
+    //console.log(base64)
 
-    console.log(imageData)
-    axios.post('http://127.0.0.1:5000/compare', data, { headers })
+    axios.post('http://localhost:4000/api/compare',
+    {
+      image:imageData
+    }
+      )
     .then(response => {
         // código para manejar la respuesta exitosa
         console.log(response)
@@ -74,9 +63,7 @@ function App() {
           timer: 2000,
           timerProgressBar: true,
           icon: 'success',
-        }).then(() => {
-          window.location.reload();
-        });
+        })
     })
     .catch(error => {
         // código para manejar el error
@@ -84,6 +71,8 @@ function App() {
     });
 
   }
+
+ 
 
 
   const handleCameraClick = () => {
@@ -187,9 +176,7 @@ function App() {
         )  } 
       </div>
       <Button onClick={takeSnapshot}>Take Snapshot</Button>
-      {imageData && (
-        console.log(imageData)
-      )}
+      <Button onClick={enviarData}>Loguear</Button>
     </Modal>
    
     </Form.Item>
