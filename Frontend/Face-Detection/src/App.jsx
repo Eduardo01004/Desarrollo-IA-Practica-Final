@@ -45,9 +45,6 @@ function App() {
   };
 
   const enviarData = () =>{
-    //console.log(imageData)
-
-    //console.log(base64)
 
     axios.post('http://localhost:4000/api/compare',
     {
@@ -55,19 +52,33 @@ function App() {
     }
       )
     .then(response => {
+      console.log(response.status)
         // código para manejar la respuesta exitosa
         console.log(response)
-        Swal.fire({
-          title: 'Alerta',
-          text: 'Usuario Verificado',
-          timer: 2000,
-          timerProgressBar: true,
-          icon: 'success',
-        })
+
+        if (response.status === 200){
+          Swal.fire({
+            title: 'Login',
+            text: 'Usuario Verificado',
+            timer: 2000,
+            timerProgressBar: true,
+            icon: 'success',
+          })
+        }else {
+          
+        }
+        
     })
     .catch(error => {
         // código para manejar el error
         console.log(error)
+        Swal.fire({
+          title: 'Alerta',
+          text: 'Usuario No Verificado',
+          timer: 2000,
+          timerProgressBar: true,
+          icon: 'Error',
+        })
     });
 
   }
@@ -150,7 +161,7 @@ function App() {
 
     <Form.Item>
       <Button type="primary" onClick={openCamera}>
-        Activate camera
+        Log In por Camara
       </Button>
 
 
@@ -175,8 +186,10 @@ function App() {
         />
         )  } 
       </div>
-      <Button onClick={takeSnapshot}>Take Snapshot</Button>
-      <Button onClick={enviarData}>Loguear</Button>
+      <div style={{ textAlign: 'center' }}>
+        <button onClick={takeSnapshot}>Capturar</button>
+        <button onClick={enviarData}>Loguear</button>
+      </div>
     </Modal>
    
     </Form.Item>
