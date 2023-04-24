@@ -1,10 +1,11 @@
 import { useState,useRef,useEffect } from 'react'
 import './App.css'
 import React from 'react';
-import { Form, Input, Button } from 'antd';
+import { Form, Input, Button,Upload } from 'antd';
 import {  Modal } from "antd";
 import Swal from 'sweetalert2'; // Importa SweetAlert
 import axios from 'axios';
+import { PlusOutlined,PlusCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 
 
 
@@ -17,6 +18,8 @@ function App() {
   const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [videoStream, setVideoStream] = useState(null);
   const [imageData, setImageData] = useState(null);
+  const [imageUrl, setImageUrl] = useState();
+  const [loading, setLoading] = useState(false);
 
   const headers = {
     'Content-Type': 'application/json',
@@ -24,10 +27,6 @@ function App() {
 
   };
 
-
-  const data = {
-    image:imageData
-    };
 
 
 
@@ -43,6 +42,57 @@ function App() {
 
    
   };
+
+
+  const getBase64 = (img, callback) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result));
+    reader.readAsDataURL(img);
+  };
+
+  const beforeUpload = (file) => {
+    const isJpgOrPng = file.type === 'image/jpg' || file.type === 'image/png';
+    if (!isJpgOrPng) {
+      message.error('You can only upload JPG/PNG file!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Image must smaller than 2MB!');
+    }
+    return isJpgOrPng && isLt2M;
+  };
+
+  const handleChange = (info) => {
+    if (info.file.status === 'uploading') {
+      setLoading(true);
+      return;
+    }
+    if (info.file.status === 'done') {
+      console.log("entra aqui")
+      // Get this url from response in real world.
+      getBase64(info.file.originFileObj, (url) => {
+        setLoading(false);
+        setImageUrl(url);
+        console.log(url)
+        //console.log(ima)
+      });
+    }
+  };
+
+  const uploadButton = (
+    <div>
+      {loading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div
+        style={{
+          marginTop: 8,
+        }}
+      >
+        Upload
+      </div>
+    </div>
+  );
+
+  
 
   const enviarData = () =>{
 
@@ -86,8 +136,8 @@ function App() {
  
 
 
-  const handleCameraClick = () => {
-    setIsCameraVisible(true);
+  const prueba = () => {
+    console.log(imageUrl)
   };
 
   const handleOk = () => {
@@ -122,6 +172,7 @@ function App() {
 
   const onFinish = (values) => {
     console.log('Received values of form: ', values);
+    console.log(imageUrl)
   };
 
   useEffect(() => {
@@ -136,7 +187,6 @@ function App() {
     <Form
     name="login-form"
     initialValues={{ remember: true }}
-    onFinish={onFinish}
     style={{ maxWidth: 400, margin: 'auto' }}
   >
     <Form.Item
@@ -152,12 +202,35 @@ function App() {
     >
       <Input.Password placeholder="Password" />
     </Form.Item>
+    <Form.Item label="" valuePropName="fileList" >
+            <Upload action="https://www.mocky.io/v2/5cc8019d300000980a055e76" listType="picture-card" beforeUpload={beforeUpload} onChange={handleChange}>
+              <div>
+              <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Imagen</div>
+              </div>
+            </Upload>
+
+            {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt="avatar"
+            style={{
+              width: '100%',
+            }}
+          />
+        ) : (
+          uploadButton
+        )}
+    </Form.Item>
 
     <Form.Item>
-      <Button type="primary" htmlType="submit">
+      <Button type="primary" htmlType="submit" onClick={prueba}>
         Log in
       </Button>
     </Form.Item>
+
+    
+
 
     <Form.Item>
       <Button type="primary" onClick={openCamera}>
