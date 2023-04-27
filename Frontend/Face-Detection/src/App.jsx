@@ -5,7 +5,8 @@ import { Form, Input, Button,Upload } from 'antd';
 import {  Modal } from "antd";
 import Swal from 'sweetalert2'; // Importa SweetAlert
 import axios from 'axios';
-import { PlusOutlined,PlusCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
+import { PlusOutlined,PlusCircleTwoTone, LoadingOutlined,UploadOutlined} from '@ant-design/icons';
+
 
 
 
@@ -20,12 +21,13 @@ function App() {
   const [imageData, setImageData] = useState(null);
   const [imageUrl, setImageUrl] = useState();
   const [loading, setLoading] = useState(false);
+  const [imageInfo, setImageInfo] = useState(null);
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'Origin': 'http://localhost:5173' // Reemplaza con la URL de tu aplicación React Vite
-
-  };
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
 
 
 
@@ -43,64 +45,19 @@ function App() {
    
   };
 
-
-  const getBase64 = (img, callback) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => callback(reader.result));
-    reader.readAsDataURL(img);
-  };
-
-  const beforeUpload = (file) => {
-    const isJpgOrPng = file.type === 'image/jpg' || file.type === 'image/png';
-    if (!isJpgOrPng) {
-      message.error('You can only upload JPG/PNG file!');
-    }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('Image must smaller than 2MB!');
-    }
-    return isJpgOrPng && isLt2M;
-  };
-
-  const handleChange = (info) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
-    }
-    if (info.file.status === 'done') {
-      console.log("entra aqui")
-      // Get this url from response in real world.
-      getBase64(info.file.originFileObj, (url) => {
-        setLoading(false);
-        setImageUrl(url);
-        console.log(url)
-        //console.log(ima)
-      });
-    }
-  };
-
-  const uploadButton = (
-    <div>
-      {loading ? <LoadingOutlined /> : <PlusOutlined />}
-      <div
-        style={{
-          marginTop: 8,
-        }}
-      >
-        Upload
-      </div>
-    </div>
-  );
-
   
 
   const enviarData = () =>{
 
-    axios.post('http://localhost:4000/api/compare',
-    {
-      image:imageData
+    const splitArray = imageInfo.dataUrl.split(',');
+    const imagen = splitArray[1]
+    const data = {
+      image: imageData,
+      compare: imagen
     }
-      )
+   // console.log(imagen)
+
+    axios.post('http://localhost:4000/api/compare',data)
     .then(response => {
       console.log(response.status)
         // código para manejar la respuesta exitosa
@@ -127,7 +84,7 @@ function App() {
           text: 'Usuario No Verificado',
           timer: 2000,
           timerProgressBar: true,
-          icon: 'Error',
+          icon: 'error',
         })
     });
 
@@ -137,12 +94,9 @@ function App() {
 
 
   const prueba = () => {
-    console.log(imageUrl)
+    console.log(imageInfo.dataUrl)
   };
 
-  const handleOk = () => {
-    setIsCameraVisible(false);
-  };
 
   const handleCancel = () => {
     setIsCameraVisible(false);
@@ -175,19 +129,16 @@ function App() {
     console.log(imageUrl)
   };
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = videoStream;
-    }
-  }, [videoStream]);
-
 
 
   return (
+    
     <Form
-    name="login-form"
-    initialValues={{ remember: true }}
-    style={{ maxWidth: 400, margin: 'auto' }}
+    labelCol={{ span: 10 }}
+            wrapperCol={{ span: 14 }}
+            layout="horizontal"
+            style={{ maxWidth: 600 }}
+
   >
     <Form.Item
       name="username"
@@ -202,29 +153,43 @@ function App() {
     >
       <Input.Password placeholder="Password" />
     </Form.Item>
-    <Form.Item label="" valuePropName="fileList" >
-            <Upload action="https://www.mocky.io/v2/5cc8019d300000980a055e76" listType="picture-card" beforeUpload={beforeUpload} onChange={handleChange}>
-              <div>
-              <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Imagen</div>
-              </div>
-            </Upload>
 
-            {imageUrl ? (
+
+
+    <Form.Item label="" valuePropName="fileList" >
+    <Upload
+  beforeUpload={file => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageInfo({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        dataUrl: reader.result,
+      });
+    };
+    reader.readAsDataURL(file);
+    return false;
+  }}
+>
+  <Button icon={<UploadOutlined />}>Seleccionar Imagen</Button>
+</Upload>
+
+{imageInfo && (
           <img
-            src={imageUrl}
+            src={imageInfo.dataUrl}
             alt="avatar"
             style={{
               width: '100%',
             }}
           />
-        ) : (
-          uploadButton
         )}
+
+            
     </Form.Item>
 
     <Form.Item>
-      <Button type="primary" htmlType="submit" onClick={prueba}>
+      <Button type="primary" icon={<PlusCircleTwoTone />} size="large" onClick={prueba}>
         Log in
       </Button>
     </Form.Item>
